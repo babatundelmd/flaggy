@@ -44,6 +44,7 @@ describe('generateQuestion', () => {
                 break;
             }
         }
+        expect(shuffledAtLeastOnce).toBe(true);
     });
 
     it('should prioritize distractors from the same subregion', () => {
