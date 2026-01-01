@@ -11,7 +11,6 @@ The application is architected for speed and maintainability, leveraging modern 
 - **Language**: [TypeScript](https://www.typescriptlang.org/) for strict type safety across the domain model.
 - **Build Tool**: [Vite](https://vitejs.dev/) for blazingly fast development and optimized production builds.
 - **State Management**: [TanStack Query (React Query)](https://tanstack.com/query/latest) for declarative data fetching and caching.
-- **Styling**: Vanilla CSS with CSS Variables for a dynamic "glassmorphism" design system.
 - **Animations**: [Framer Motion](https://www.framer.com/motion/) for fluid UI transitions and micro-interactions.
 - **Icons**: [Lucide React](https://lucide.dev/) for a clean, consistent icon set.
 
