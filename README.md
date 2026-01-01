@@ -49,6 +49,30 @@ The UI follows a **Glassmorphism** aesthetic, utilizing:
 - **CSS Grid/Flexbox**: A responsive split-layout that adapts from widescreen desktops to mobile devices.
 - **Design Tokens**: A comprehensive set of CSS variables (`--primary`, `--bg-gradient`, etc.) for consistent theme management.
 
+## ✅ Testing
+
+Flag Master includes a comprehensive testing suite covering both unit logic and end-to-end user flows.
+
+### Unit Testing (Vitest)
+Unit tests focus on the core game logic, such as question generation and randomization.
+```bash
+npm run test:unit
+```
+To run tests in a visual UI:
+```bash
+npm run test:ui
+```
+
+### E2E Testing (Cypress)
+End-to-end tests verify the complete user journey from landing to playing the game.
+```bash
+# Run tests headlessly
+npm run cy:run
+
+# Open Cypress Test Runner (Interactive)
+npm run cy:open
+```
+
 ## 🛠️ Development
 
 ### Setup
