@@ -7,6 +7,10 @@ import { OptionButton } from './components/OptionButton';
 import { DifficultySelector } from './components/DifficultySelector';
 import { RegionSelector } from './components/RegionSelector';
 import type { Difficulty, Question, Country } from './types/country';
+import { initPostHog, trackGameStart, trackGuess, trackDifficultyChange, trackRegionChange } from './logic/analytics';
+
+// Initialize PostHog
+initPostHog();
 
 const TIMER_LIMITS: Record<Difficulty, number> = {
   beginner: 15,
@@ -99,9 +103,10 @@ function App() {
       setTotalQuestions(0);
       setSeenCount(0); // Show 0 initially while loading the first flag
       nextQuestion();
+      trackGameStart(difficulty, region, subregion);
     }
     return () => stopTimer();
-  }, [countries, nextQuestion, stopTimer]);
+  }, [countries, nextQuestion, stopTimer, difficulty, region, subregion]);
 
   const handleOptionClick = (option: Country | null) => {
     if (selectedOption !== null && option !== null) return;
@@ -112,6 +117,15 @@ function App() {
     if (option === null) {
       setIsCorrect(false);
       setSelectedOption({} as Country);
+      trackGuess({
+        country: currentQuestion.correctCountry.name.common,
+        cca3: currentQuestion.correctCountry.cca3,
+        isCorrect: false,
+        difficulty,
+        region,
+        subregion,
+        isTimeout: true
+      });
     } else {
       setSelectedOption(option);
       const correct = option.cca3 === currentQuestion.correctCountry.cca3;
@@ -119,6 +133,15 @@ function App() {
       if (correct) {
         setScore((prev) => prev + 1);
       }
+      trackGuess({
+        country: currentQuestion.correctCountry.name.common,
+        cca3: currentQuestion.correctCountry.cca3,
+        isCorrect: correct,
+        difficulty,
+        region,
+        subregion,
+        isTimeout: false
+      });
     }
 
     setTotalQuestions((prev) => prev + 1);
@@ -139,13 +162,20 @@ function App() {
     }, 1500);
   };
 
+  const handleDifficultyChange = (d: Difficulty) => {
+    setDifficulty(d);
+    trackDifficultyChange(d);
+  };
+
   const handleRegionChange = (r: string) => {
     setRegion(r);
     setSubregion('all');
+    trackRegionChange(r, 'all');
   };
 
   const handleSubregionChange = (s: string) => {
     setSubregion(s);
+    trackRegionChange(region, s);
   };
 
   if (isLoading) {
@@ -184,7 +214,7 @@ function App() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div>
               <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Difficulty</span>
-              <DifficultySelector current={difficulty} onSelect={setDifficulty} />
+              <DifficultySelector current={difficulty} onSelect={handleDifficultyChange} />
             </div>
 
             <div>
