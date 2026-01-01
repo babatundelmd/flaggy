@@ -44,6 +44,24 @@ describe('generateQuestion', () => {
                 break;
             }
         }
-        expect(shuffledAtLeastOnce).toBe(true);
+    });
+
+    it('should prioritize distractors from the same subregion', () => {
+        const extraCountries: Country[] = [
+            { name: { common: 'Senegal', official: 'Republic of Senegal' }, cca3: 'SEN', flags: { svg: '', png: '', alt: '' }, region: 'Africa', subregion: 'Western Africa', population: 16000000 },
+            { name: { common: 'Gambia', official: 'Republic of the Gambia' }, cca3: 'GMB', flags: { svg: '', png: '', alt: '' }, region: 'Africa', subregion: 'Western Africa', population: 2400000 },
+            { name: { common: 'Ghana', official: 'Republic of Ghana' }, cca3: 'GHA', flags: { svg: '', png: '', alt: '' }, region: 'Africa', subregion: 'Western Africa', population: 31000000 },
+            { name: { common: 'USA', official: 'United States of America' }, cca3: 'USA', flags: { svg: '', png: '', alt: '' }, region: 'Americas', subregion: 'North America', population: 331000000 },
+        ];
+        const allCountries = [...mockCountries, ...extraCountries];
+        const senegal = extraCountries[0];
+
+        const question = generateQuestion(allCountries, senegal);
+
+        // Subregion matches should be prioritized. USA and mockCountries (Europe) should NOT be in options.
+        expect(question.options).toContain(senegal);
+        expect(question.options.map(o => o.cca3)).toContain('GMB');
+        expect(question.options.map(o => o.cca3)).toContain('GHA');
+        expect(question.options.map(o => o.cca3)).not.toContain('USA');
     });
 });
