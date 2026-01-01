@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain } from 'lucide-react';
+import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain, Github } from 'lucide-react';
 import { useFlags } from './hooks/useFlags';
 import { generateQuestion } from './logic/game';
 import { FlagCard } from './components/FlagCard';
@@ -223,6 +223,35 @@ function App() {
             <Trophy size={16} />
             <span>Level: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</span>
           </div>
+          <span>|</span>
+          <a
+            href="https://github.com/babatundelmd/flaggy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              color: 'var(--primary)',
+              textDecoration: 'none',
+              fontWeight: '600',
+              padding: '0.4rem 0.8rem',
+              background: 'rgba(99, 102, 241, 0.1)',
+              borderRadius: '10px',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <Github size={16} />
+            <span>Star on GitHub</span>
+          </a>
         </div>
       </div>
 
