@@ -8,6 +8,9 @@ import { DifficultySelector } from './components/DifficultySelector';
 import { RegionSelector } from './components/RegionSelector';
 import type { Difficulty, Question, Country } from './types/country';
 import { initPostHog, trackGameStart, trackGuess, trackDifficultyChange, trackRegionChange } from './logic/analytics';
+import { ResultsModal } from './components/ResultsModal';
+
+const DIFFICULTIES: Difficulty[] = ['beginner', 'medium', 'hard', 'genius'];
 
 // Initialize PostHog
 initPostHog();
@@ -30,6 +33,7 @@ function App() {
   const [selectedOption, setSelectedOption] = useState<Country | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [timeLeft, setTimeLeft] = useState(TIMER_LIMITS[difficulty]);
+  const [showResults, setShowResults] = useState(false);
 
   // SESSION LOGIC: How many flags have we presented in the current set?
   const [seenCount, setSeenCount] = useState(0);
@@ -158,8 +162,32 @@ function App() {
 
     // Wait exactly 1.5s to show the next flag.
     setTimeout(() => {
-      nextQuestion();
+      if (queueRef.current.length === 0) {
+        setShowResults(true);
+      } else {
+        nextQuestion();
+      }
     }, 1500);
+  };
+
+  const handleRepeat = () => {
+    setShowResults(false);
+    queueRef.current = [];
+    setScore(0);
+    setTotalQuestions(0);
+    setSeenCount(0);
+    nextQuestion();
+  };
+
+  const handleNextLevel = () => {
+    const currentIndex = DIFFICULTIES.indexOf(difficulty);
+    if (currentIndex < DIFFICULTIES.length - 1) {
+      const nextDiff = DIFFICULTIES[currentIndex + 1];
+      setDifficulty(nextDiff);
+      trackDifficultyChange(nextDiff);
+      setShowResults(false);
+      // Let the useEffect handle the reset when difficulty changes
+    }
   };
 
   const handleDifficultyChange = (d: Difficulty) => {
@@ -337,6 +365,17 @@ function App() {
           </div>
         </div>
       </div>
+
+      {showResults && countries && (
+        <ResultsModal
+          score={score}
+          totalQuestions={totalQuestions}
+          accuracy={totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0}
+          onRepeat={handleRepeat}
+          onNextLevel={handleNextLevel}
+          hasNextLevel={DIFFICULTIES.indexOf(difficulty) < DIFFICULTIES.length - 1}
+        />
+      )}
     </div>
   );
 }
