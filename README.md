@@ -63,39 +63,12 @@ Difficulty filters the dataset based on population density (recognition proxy):
     -   `averageTime` (Seconds - critical for tie-breaking)
     -   `dayId` / `weekId` (For period filtering)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 -   Node.js > 18
 -   A Firebase Project with Auth (Google) and Firestore enabled.
 
-### Setup
-1.  **Clone the repo**
-    ```bash
-    git clone https://github.com/babatundelmd/flaggy.git
-    cd flaggy
-    ```
-
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure Environment**
-    Create a `.env` file in the root directory:
-    ```env
-    VITE_FIREBASE_API_KEY=your_api_key
-    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-    VITE_FIREBASE_PROJECT_ID=your_project_id
-    VITE_FIREBASE_STORAGE_BUCKET=your_bucket
-    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-    VITE_FIREBASE_APP_ID=your_app_id
-    ```
-
-4.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
 
 ### Testing
 Flag Master includes unit and E2E tests.
@@ -108,4 +81,4 @@ npm run cy:open
 ```
 
 ## 📄 License
-MIT License. Built with ❤️ by Babatunde.
+MIT License. Built by Babatunde.
