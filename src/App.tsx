@@ -323,7 +323,7 @@ function App() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)' }}>
+      <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <RefreshCw className="animate-spin" size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
           <h2>{authLoading ? 'Signing in...' : 'Loading Flags...'}</h2>
@@ -334,7 +334,7 @@ function App() {
 
   if (error || (countries && countries.length < 3)) {
     return (
-      <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)' }}>
+      <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)', height: '100vh' }}>
         <div style={{ textAlign: 'center', maxWidth: '400px', padding: '2rem', background: 'white', borderRadius: '24px' }}>
           <Globe2 size={48} style={{ color: 'var(--error)', marginBottom: '1rem' }} />
           <h2>Not enough flags found</h2>
@@ -441,46 +441,27 @@ function App() {
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 'auto', paddingBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="footer-stats desktop-only">
+          <div className="footer-stat-group">
             <TimerIcon size={16} />
             <span>Limit: {currentLimit}s</span>
           </div>
-          <span>|</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="footer-separator">|</span>
+          <div className="footer-stat-group">
             <Brain size={16} />
             <span>Seen: {seenCount} / {countries?.length}</span>
           </div>
-          <span>|</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="footer-separator">|</span>
+          <div className="footer-stat-group">
             <Trophy size={16} />
             <span>Level: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</span>
           </div>
-          <span>|</span>
+          <span className="footer-separator">|</span>
           <a
             href="https://github.com/babatundelmd/flaggy"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              color: 'var(--primary)',
-              textDecoration: 'none',
-              fontWeight: '600',
-              padding: '0.4rem 0.8rem',
-              background: 'rgba(99, 102, 241, 0.1)',
-              borderRadius: '10px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
+            className="github-link"
           >
             <Github size={16} />
             <span>Star on GitHub</span>
@@ -544,6 +525,33 @@ function App() {
             {selectedOption !== null && isCorrect === false && !selectedOption.cca3 && (
               <p style={{ color: 'var(--error)', textAlign: 'center', fontWeight: '700', marginTop: '0.5rem' }}>Time's Up!</p>
             )}
+          </div>
+
+          <div className="footer-stats mobile-only">
+            <div className="footer-stat-group">
+              <TimerIcon size={16} />
+              <span>Limit: {currentLimit}s</span>
+            </div>
+            <span className="footer-separator">|</span>
+            <div className="footer-stat-group">
+              <Brain size={16} />
+              <span>Seen: {seenCount} / {countries?.length}</span>
+            </div>
+            <span className="footer-separator">|</span>
+            <div className="footer-stat-group">
+              <Trophy size={16} />
+              <span>Level: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</span>
+            </div>
+            <span className="footer-separator">|</span>
+            <a
+              href="https://github.com/babatundelmd/flaggy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="github-link"
+            >
+              <Github size={16} />
+              <span>Star on GitHub</span>
+            </a>
           </div>
 
           {/* Stats Grid Commented Out as requested

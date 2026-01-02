@@ -391,3 +391,91 @@ h1 {
   gap: 1rem;
   margin-top: 2rem;
 }
+
+/* Responsive Footer Styles */
+.footer-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: auto;
+  padding-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-stat-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-separator {
+  display: inline-block;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.github-link:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .footer-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 2rem;
+  }
+
+  .footer-separator {
+    display: none;
+  }
+
+  .footer-stat-group {
+    width: 100%;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+
+  .github-link {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Visibility Utilities */
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: flex;
+    margin-top: 1.5rem;
+    padding-bottom: 0;
+  }
+}
