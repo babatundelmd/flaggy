@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User Profiles: Users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Scores Collection
+    match /scores/{scoreId} {
+      // READ: Everyone (including guests) can view the leaderboard
+      allow read: if true;
+      
+      // CREATE: Only authenticated users can submit scores, and only for themselves
+      allow create: if request.auth != null 
+                    && request.resource.data.uid == request.auth.uid;
+                    
+      // UPDATE/DELETE: Not allowed (scores are immutable for now)
+      allow update, delete: if false;
+    }
+  }
+}

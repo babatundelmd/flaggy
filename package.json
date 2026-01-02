@@ -1,6 +1,10 @@
 {
   "name": "flaggy",
   "private": true,
+  "author": {
+    "name": "Babatunde Lamidi",
+    "url": "https://github.com/babatundelmd"
+  },
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -16,6 +20,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.16",
     "clsx": "^2.1.1",
+    "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "posthog-js": "^1.312.0",

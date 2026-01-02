@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain, Github } from 'lucide-react';
+import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain, Github, User as UserIcon, LogOut, Flag, Play, Pause } from 'lucide-react';
 import { useFlags } from './hooks/useFlags';
 import { generateQuestion } from './logic/game';
 import { FlagCard } from './components/FlagCard';
@@ -9,10 +9,13 @@ import { RegionSelector } from './components/RegionSelector';
 import type { Difficulty, Question, Country } from './types/country';
 import { initPostHog, trackGameStart, trackGuess, trackDifficultyChange, trackRegionChange } from './logic/analytics';
 import { ResultsModal } from './components/ResultsModal';
+import { useAuth } from './contexts/AuthContext';
+import { LoginModal } from './components/LoginModal';
+import { Leaderboard } from './components/Leaderboard';
+import { detectUserCountry, submitScore } from './logic/leaderboard';
 
 const DIFFICULTIES: Difficulty[] = ['beginner', 'medium', 'hard', 'genius'];
 
-// Initialize PostHog
 initPostHog();
 
 const TIMER_LIMITS: Record<Difficulty, number> = {
@@ -22,10 +25,17 @@ const TIMER_LIMITS: Record<Difficulty, number> = {
   genius: 2
 };
 
+type GameState = 'idle' | 'playing' | 'paused';
+
 function App() {
+  const { user, signOut, loading: authLoading } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [userCountry, setUserCountry] = useState<string>('US');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [region, setRegion] = useState('all');
   const [subregion, setSubregion] = useState('all');
+
+  const [gameState, setGameState] = useState<GameState>('idle');
 
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -35,11 +45,21 @@ function App() {
   const [timeLeft, setTimeLeft] = useState(TIMER_LIMITS[difficulty]);
   const [showResults, setShowResults] = useState(false);
 
-  // SESSION LOGIC: How many flags have we presented in the current set?
+  // Speed Tracking
+  const [totalTimeTaken, setTotalTimeTaken] = useState(0);
+  const questionStartTimeRef = useRef<number | null>(null);
+
   const [seenCount, setSeenCount] = useState(0);
   const queueRef = useRef<Country[]>([]);
   const lastCorrectCca3Ref = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
+
+  // Ref for local access in callbacks to avoid dependency cycles
+  const handleOptionClickRef = useRef<(option: Country | null) => void>(() => { });
+
+  useEffect(() => {
+    detectUserCountry().then(setUserCountry);
+  }, []);
 
   const { data: countries, isLoading, error, refetch } = useFlags(difficulty, region, subregion);
 
@@ -59,7 +79,7 @@ function App() {
       setTimeLeft((prev) => {
         if (prev <= 0.1) {
           stopTimer();
-          handleOptionClick(null);
+          handleOptionClickRef.current(null);
           return 0;
         }
         return prev - 0.1;
@@ -69,7 +89,6 @@ function App() {
 
   const refillQueue = useCallback((flags: Country[]) => {
     const shuffled = [...flags].sort(() => Math.random() - 0.5);
-    // Safety: ensure the next flag isn't a repeat of the one we JUST saw before reset
     if (lastCorrectCca3Ref.current && shuffled[shuffled.length - 1].cca3 === lastCorrectCca3Ref.current && shuffled.length > 2) {
       const last = shuffled.pop()!;
       shuffled.unshift(last);
@@ -80,7 +99,6 @@ function App() {
   const nextQuestion = useCallback(() => {
     if (!countries || countries.length < 3) return;
 
-    // Refill the collection if we finished the previous one
     if (queueRef.current.length === 0) {
       refillQueue(countries);
     }
@@ -93,30 +111,110 @@ function App() {
     setSelectedOption(null);
     setIsCorrect(null);
 
-    // UI Update: Progress is (Total Flags - Flags left to show)
     setSeenCount(countries.length - queueRef.current.length);
 
-    startTimer();
-  }, [countries, startTimer, refillQueue]);
+    questionStartTimeRef.current = Date.now();
 
+    // Only start timer if user is logged in AND game is playing
+    if (user && gameState === 'playing') {
+      startTimer();
+    }
+  }, [countries, startTimer, refillQueue, user, gameState]);
+
+  // Reset/Init Game Logic
   useEffect(() => {
     if (countries && countries.length >= 3) {
       queueRef.current = [];
       lastCorrectCca3Ref.current = null;
       setScore(0);
       setTotalQuestions(0);
-      setSeenCount(0); // Show 0 initially while loading the first flag
-      nextQuestion();
-      trackGameStart(difficulty, region, subregion);
+      setTotalTimeTaken(0);
+      setSeenCount(0);
+
+      if (user) {
+        setGameState('paused');
+        // Do not call nextQuestion here which might start timer? 
+        // Actually nextQuestion is needed to init the Question, 
+        // but we must ensure startTimer inside nextQuestion respects paused logic.
+        nextQuestion();
+        trackGameStart(difficulty, region, subregion);
+      } else {
+        setGameState('idle');
+        nextQuestion();
+      }
     }
     return () => stopTimer();
-  }, [countries, nextQuestion, stopTimer, difficulty, region, subregion]);
+  }, [countries, stopTimer, difficulty, region, subregion, user]);
+
+  // Watch for user login to start game if not already playing
+  useEffect(() => {
+    if (user && gameState === 'idle' && !showResults && countries && countries.length >= 3) {
+      // Changed to 'paused' instead of 'playing' to wait for user to click Play
+      setGameState('paused');
+      if (currentQuestion && !timerRef.current) {
+        questionStartTimeRef.current = Date.now();
+        // Do NOT startTimer() here. Wait for Play button.
+        // startTimer(); 
+        trackGameStart(difficulty, region, subregion);
+      } else if (!currentQuestion) {
+        nextQuestion();
+        trackGameStart(difficulty, region, subregion);
+      }
+    }
+
+    if (!user && gameState === 'playing') {
+      stopTimer();
+      setGameState('idle');
+      setScore(0);
+      setTotalQuestions(0);
+      setTotalTimeTaken(0);
+    }
+  }, [user, gameState, showResults, countries, startTimer, nextQuestion, stopTimer, difficulty, region, subregion, currentQuestion]);
+
+
+
+  /* New Handler */
+  const handlePauseGame = () => {
+    stopTimer();
+    setGameState('paused');
+  };
+
+  const handleResumeGame = () => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setGameState('playing');
+    // Adjust start time to account for pause duration
+    const timeElapsed = (currentLimit - timeLeft) * 1000;
+    questionStartTimeRef.current = Date.now() - timeElapsed;
+    startTimer();
+  };
 
   const handleOptionClick = (option: Country | null) => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    if (gameState !== 'playing') {
+      // User must press Play button to resume/start
+      return;
+    }
+
     if (selectedOption !== null && option !== null) return;
     if (!currentQuestion) return;
 
     stopTimer();
+
+    // Calculate time taken
+    const now = Date.now();
+    let timeTaken = 0;
+    if (questionStartTimeRef.current) {
+      timeTaken = (now - questionStartTimeRef.current) / 1000;
+      if (timeTaken > currentLimit) timeTaken = currentLimit;
+    }
+    setTotalTimeTaken(prev => prev + timeTaken);
 
     if (option === null) {
       setIsCorrect(false);
@@ -151,10 +249,7 @@ function App() {
     setTotalQuestions((prev) => prev + 1);
 
     // CYCLE RESET FEEDBACK:
-    // If the queue is now empty, we've just answered the final flag of the set.
     if (queueRef.current.length === 0) {
-      // 1. Maintain the "Total/Total" view (e.g. 50/50) briefly so they see it.
-      // 2. Set to 0 after 750ms so they see the count reset to zero.
       setTimeout(() => {
         setSeenCount(0);
       }, 750);
@@ -164,19 +259,40 @@ function App() {
     setTimeout(() => {
       if (queueRef.current.length === 0) {
         setShowResults(true);
+        setGameState('idle');
+        if (user) {
+          const finalScore = (option && option.cca3 === currentQuestion?.correctCountry.cca3) ? score + 1 : score;
+          const finalTotal = totalQuestions + 1;
+          const finalAccuracy = (finalScore / finalTotal) * 100;
+          const finalTime = totalTimeTaken + timeTaken;
+          const avgTime = finalTime / finalTotal;
+
+          submitScore(user, finalScore, finalAccuracy, avgTime, difficulty, userCountry).catch(console.error);
+        }
       } else {
         nextQuestion();
       }
     }, 1500);
   };
 
+  // Update ref for timer access
+  handleOptionClickRef.current = handleOptionClick;
+
   const handleRepeat = () => {
     setShowResults(false);
     queueRef.current = [];
     setScore(0);
     setTotalQuestions(0);
+    setTotalTimeTaken(0);
     setSeenCount(0);
-    nextQuestion();
+
+    if (user) {
+      setGameState('playing');
+      nextQuestion();
+    } else {
+      setGameState('idle');
+      nextQuestion();
+    }
   };
 
   const handleNextLevel = () => {
@@ -186,7 +302,6 @@ function App() {
       setDifficulty(nextDiff);
       trackDifficultyChange(nextDiff);
       setShowResults(false);
-      // Let the useEffect handle the reset when difficulty changes
     }
   };
 
@@ -206,12 +321,12 @@ function App() {
     trackRegionChange(region, s);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)' }}>
         <div style={{ textAlign: 'center' }}>
           <RefreshCw className="animate-spin" size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-          <h2>Loading Flags...</h2>
+          <h2>{authLoading ? 'Signing in...' : 'Loading Flags...'}</h2>
         </div>
       </div>
     );
@@ -232,10 +347,64 @@ function App() {
 
   return (
     <div className="split-layout">
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       <div className="left-panel">
-        <header>
-          <h1>Flag Master</h1>
-          <p className="subtitle">Learn all the flags of the world</p>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1>Flag Master</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <p className="subtitle">Learn all the flags of the world</p>
+              {/* {gameState === 'playing' && (
+                <button
+                  onClick={handlePauseGame}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--text-muted)',
+                    borderRadius: '8px',
+                    padding: '0.2rem 0.5rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  <Pause size={12} /> Pause
+                </button>
+              )} */}
+            </div>
+          </div>
+          <div>
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.5)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || 'User'} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                  ) : (
+                    <UserIcon size={20} />
+                  )}
+                  <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{user.displayName?.split(' ')[0]}</span>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  title="Sign Out"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={() => setIsLoginModalOpen(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                <Flag size={16} />
+                Sign In
+              </button>
+            )}
+          </div>
         </header>
 
         <div style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.4)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--glass-border)' }}>
@@ -257,12 +426,18 @@ function App() {
           </div>
         </div>
 
-        <div className="flag-display-section">
+        <div className="flag-display-section" style={{ position: 'relative' }}>
+          {/* Game Overlay Removed as requested */}
           {currentQuestion && (
             <FlagCard
               flagUrl={currentQuestion.correctCountry.flags.svg}
               altText={currentQuestion.correctCountry.flags.alt}
             />
+          )}
+          {!currentQuestion && gameState === 'idle' && (
+            <div style={{ width: '100%', aspectRatio: '3/2', background: 'rgba(0,0,0,0.05)', borderRadius: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
+            </div>
           )}
         </div>
 
@@ -315,14 +490,38 @@ function App() {
 
       <div className="right-panel">
         <div className="controls-section">
-          <div className="timer-bar">
-            <div
-              className="timer-fill"
+          <div className="timer-bar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={gameState === 'playing' ? handlePauseGame : handleResumeGame}
               style={{
-                width: `${(timeLeft / currentLimit) * 100}%`,
-                background: timeLeft < (currentLimit * 0.3) ? 'var(--error)' : 'var(--primary)'
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-            />
+              title={gameState === 'playing' ? 'Pause Game' : 'Start Game'}
+            >
+              {gameState === 'playing' ? (
+                <Pause size={10} fill="currentColor" />
+              ) : (
+                <Play size={10} fill="currentColor" />
+              )}
+            </button>
+            <div style={{ flex: 1, height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div
+                className="timer-fill"
+                style={{
+                  height: '100%',
+                  width: `${(timeLeft / currentLimit) * 100}%`,
+                  background: timeLeft < (currentLimit * 0.3) ? 'var(--error)' : 'var(--primary)',
+                  transition: 'width 0.1s linear'
+                }}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -347,6 +546,7 @@ function App() {
             )}
           </div>
 
+          {/* Stats Grid Commented Out as requested
           <div className="stats-grid" style={{ marginTop: '1rem' }}>
             <div className="stat-item">
               <span className="stat-label">Score</span>
@@ -359,10 +559,9 @@ function App() {
               </span>
             </div>
           </div>
+          */}
 
-          <div style={{ marginTop: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
-            Global rankings coming soon!
-          </div>
+          <Leaderboard key={`${difficulty}-${userCountry}`} difficulty={difficulty} userCountry={userCountry} />
         </div>
       </div>
 

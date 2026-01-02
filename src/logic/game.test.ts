@@ -32,7 +32,6 @@ describe('generateQuestion', () => {
     });
 
     it('should shuffle options', () => {
-        // This is a probabilistic test, but good for a sanity check
         const correctCountry = mockCountries[0];
         const initialOrder = [correctCountry, mockCountries[1], mockCountries[2]];
 
@@ -59,7 +58,6 @@ describe('generateQuestion', () => {
 
         const question = generateQuestion(allCountries, senegal);
 
-        // Subregion matches should be prioritized. USA and mockCountries (Europe) should NOT be in options.
         expect(question.options).toContain(senegal);
         expect(question.options.map(o => o.cca3)).toContain('GMB');
         expect(question.options.map(o => o.cca3)).toContain('GHA');

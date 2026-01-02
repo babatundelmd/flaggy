@@ -3,100 +3,109 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-9.x-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Testing](https://img.shields.io/badge/Tests-passing-34D058?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Cypress](https://img.shields.io/badge/E2E-Cypress-17202C?logo=cypress&logoColor=white)](https://www.cypress.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A high-performance, minimalist flag learning application built with React 19, TypeScript, and Vite. Designed with a focus on smooth UX, precise game logic, and technical excellence.
+A high-performance, minimalist flag learning application built with React 19, TypeScript, and Vite. Now featuring a real-time **Global Leaderboard**, **Authentication**, and precise **Speed Tracking** for the ultimate competitive geography experience.
+
+## ✨ New Features
+
+### 🏆 Global Leaderboard & Competition
+Compete with players worldwide!
+-   **Real-Time Rankings**: Powered by **Firestore** live snapshots.
+-   **Multi-Dimensional Sorting**: Ranked by **Score** (primary) and **Average Time** (tie-breaker)—speed matters!
+-   **Global vs. Local**: Toggle between "World" and "Country" (IP-based) leaderboards.
+-   **Time Frames**: View top scores for **Daily**, **Weekly**, and **All-Time** periods.
+-   **Smart Deduplication**: The leaderboard automatically filters to show only your single *best* score per period.
+
+### 🔐 Authentication
+-   **Sign In with Google**: Secure, one-click login via Firebase Auth.
+-   **Persist Your Stats**: Save your progress and competition history across devices.
+
+### 🎮 Enhanced Game Flow
+-   **Strict Pause Control**: The game puts YOU in control. The timer **never** starts automatically. You must explicitly click the **Play** button to begin or resume.
+-   **Results Analysis**: After each round, get a detailed breakdown of your Accuracy, Score, and Speed.
+-   **Region Mastery**: Filter flags by specific regions (e.g., "Africa", "Europe") or even subregions (e.g., "Western Europe") to focus your learning.
+
+---
 
 ## Technical Architecture
 
-The application is architected for speed and maintainability, leveraging modern React patterns and a robust data layer.
-
 ### Core Stack
-- ⚛️ **Frontend**: [React 19](https://react.dev/) with functional components and hooks.
-- 📘 **Language**: [TypeScript](https://www.typescriptlang.org/) for strict type safety across the domain model.
-- ⚡ **Build Tool**: [Vite](https://vitejs.dev/) for blazingly fast development and optimized production builds.
-- 🔄 **State Management**: [TanStack Query (React Query)](https://tanstack.com/query/latest) for declarative data fetching and caching.
-- 🎭 **Animations**: [Framer Motion](https://www.framer.com/motion/) for fluid UI transitions and micro-interactions.
-- 🎨 **Icons**: [Lucide React](https://lucide.dev/) for a clean, consistent icon set.
+-   **Frontend**: React 19 + TypeScript + Vite.
+-   **Backend / BaaS**: Firebase (Auth, Firestore).
+-   **Analytics**: PostHog integration for usage tracking.
+-   **State Management**: TanStack Query (React Query) + Context API.
+-   **Styling**: Custom CSS Modules + Framer Motion for animations.
 
-## Game Logic & State Mechanics
+### Game Logic Mechanics
 
-The "heart" of Flag Master lies in its deterministic yet randomized question generation system.
+#### 1. Unique Cycle Algorithm (`queueRef`)
+To prevent repetitive questions within a session:
+-   **Shuffled Queue**: On initialization, the entire pool of filtered countries is shuffled.
+-   **Zero-Repeat Guarantee**: Flags are popped from the queue until empty, ensuring every flag is seen exactly once before any repeats.
+-   **Seamless Refill**: The queue automatically refills and reshuffles without breaking flow.
 
-### 1. Unique Cycle Algorithm (`queueRef`)
-To prevent repetitive questions within a session, the app implements a queue-based presentation system using React's `useRef`:
-- **Shuffled Queue**: On initialization or reset, the entire pool of countries (based on filters) is shuffled and stored in `queueRef`.
-- **Zero-Repeat Guarantee**: Flags are popped from the queue until empty. This ensures every flag in the filtered set is seen exactly once before any repeats occur.
-- **Seamless Refill**: When the queue exhausts, it automatically reshuffles and refills, with a safety check to ensure the last flag of the previous cycle isn't the first of the next.
+#### 2. Adaptive Difficulty
+Difficulty filters the dataset based on population density (recognition proxy):
+-   **Beginner**: Top 50 most populous countries.
+-   **Medium**: Top 100 countries.
+-   **Hard**: Top 200 countries.
+-   **Genius**: All ~250+ countries/territories.
 
-### 2. Difficulty-Population Mapping
-Difficulty levels aren't just for show; they filter the country dataset based on population density—a proxy for "recognition" difficulty:
-- **Beginner**: Top 50 most populous countries.
-- **Medium**: Top 100 countries.
-- **Hard**: Top 200 countries.
-- **Genius**: All ~250+ countries/territories.
+#### 3. Database Schema (Firestore)
+-   **Users Collection**: Stores profile info and detected country.
+-   **Scores Collection**: Stores individual game sessions with:
+    -   `score` (Points)
+    -   `accuracy` (%)
+    -   `averageTime` (Seconds - critical for tie-breaking)
+    -   `dayId` / `weekId` (For period filtering)
 
-### 3. High-Precision Timer
-The timer is implemented via `window.setInterval` with a 100ms granularity, allowing for smooth visual progress bar updates and precise "Time's Up" detection across different difficulty-based limits (2s to 15s).
+## 🚀 Getting Started
 
-## Data Layer & API Integration
+### Prerequisites
+-   Node.js > 18
+-   A Firebase Project with Auth (Google) and Firestore enabled.
 
-Flag Master consumes the [RestCountries API](https://restcountries.com/) via a typed fetcher:
+### Setup
+1.  **Clone the repo**
+    ```bash
+    git clone https://github.com/babatundelmd/flaggy.git
+    cd flaggy
+    ```
 
-- **Selective Fields**: Queries specifically request `name`, `flags`, `cca3`, `region`, `subregion`, and `population` to minimize payload size.
-- **React Query Integration**: Provides automatic caching, loading states, and error handling with a custom `useFlags` hook.
-- **Dynamic Filtering**: Logic for region and subregion filtering is performed client-side on the cached dataset for instantaneous UI updates without additional network overhead.
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-## Design System
+3.  **Configure Environment**
+    Create a `.env` file in the root directory:
+    ```env
+    VITE_FIREBASE_API_KEY=your_api_key
+    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+    VITE_FIREBASE_PROJECT_ID=your_project_id
+    VITE_FIREBASE_STORAGE_BUCKET=your_bucket
+    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+    VITE_FIREBASE_APP_ID=your_app_id
+    ```
 
-The UI follows a **Glassmorphism** aesthetic, utilizing:
-- **Backdrop Filters**: `backdrop-filter: blur(8px)` for depth.
-- **CSS Grid/Flexbox**: A responsive split-layout that adapts from widescreen desktops to mobile devices.
-- **Design Tokens**: A comprehensive set of CSS variables (`--primary`, `--bg-gradient`, etc.) for consistent theme management.
+4.  **Run Development Server**
+    ```bash
+    npm run dev
+    ```
 
-## Testing
-
-Flag Master includes a comprehensive testing suite covering both unit logic and end-to-end user flows.
-
-### Unit Testing (Vitest)
-Unit tests focus on the core game logic, such as question generation and randomization.
+### Testing
+Flag Master includes unit and E2E tests.
 ```bash
+# Unit Tests (Vitest)
 npm run test:unit
-```
-To run tests in a visual UI:
-```bash
-npm run test:ui
-```
 
-### E2E Testing (Cypress)
-End-to-end tests verify the complete user journey from landing to playing the game.
-```bash
-# Run tests headlessly
-npm run cy:run
-
-# Open Cypress Test Runner (Interactive)
+# E2E Tests (Cypress)
 npm run cy:open
 ```
 
-## 🛠️ Development
-
-### Setup
-```bash
-npm install
-npm run dev
-```
-
-### Build
-```bash
-npm run build
-```
-
-### Linting
-```bash
-npm run lint
-```
-
----
-*Developed with ❤️ and React.*
+## 📄 License
+MIT License. Built with ❤️ by Babatunde.
