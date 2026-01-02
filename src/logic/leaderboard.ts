@@ -30,13 +30,30 @@ export type Scope = 'global' | 'country';
 const SCORES_COLLECTION = 'scores';
 
 export const detectUserCountry = async (): Promise<string> => {
+    const cached = localStorage.getItem('userCountry');
+    const cacheTime = localStorage.getItem('userCountryTime');
+
+    if (cached && cacheTime) {
+        const age = Date.now() - parseInt(cacheTime);
+        if (age < 24 * 60 * 60 * 1000) {
+            return cached;
+        }
+    }
+
     try {
-        const response = await fetch('https://ipapi.co/json/');
+        // Using ip-api.com - 15,000 requests/hour for free, no CORS issues
+        const response = await fetch('http://ip-api.com/json/');
         const data = await response.json();
-        return data.country_code || 'US';
+        const country = data.countryCode || 'US';
+
+        // Cache the result
+        localStorage.setItem('userCountry', country);
+        localStorage.setItem('userCountryTime', Date.now().toString());
+
+        return country;
     } catch (error) {
         console.warn('Failed to detect country:', error);
-        return 'US';
+        return cached || 'NG';
     }
 };
 
