@@ -69,7 +69,7 @@ export const Leaderboard = ({ difficulty, userCountry }: LeaderboardProps) => {
             </div>
 
             {/* Scope Tabs */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.3)', padding: '0.25rem', borderRadius: '12px' }}>
+            <div className="leaderboard-scope-tabs">
                 <button
                     onClick={() => {
                         if (scope !== 'global') {
@@ -195,46 +195,42 @@ export const Leaderboard = ({ difficulty, userCountry }: LeaderboardProps) => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05 }}
                                         key={entry.id || realIndex}
+                                        className="leaderboard-row"
                                         style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '2rem 1fr auto auto',
-                                            gap: '0.5rem',
-                                            alignItems: 'center',
-                                            padding: '0.75rem 1rem',
-                                            borderBottom: '1px solid rgba(0,0,0,0.05)',
                                             background: user?.uid === entry.uid ? 'rgba(99, 102, 241, 0.1)' : 'transparent'
                                         }}
                                     >
-                                        <span style={{ fontWeight: '700', color: realIndex < 3 ? 'var(--primary)' : 'var(--text-muted)' }}>
+                                        <span className="rank-text" style={{ color: realIndex < 3 ? 'var(--primary)' : 'var(--text-muted)' }}>
                                             #{realIndex + 1}
                                         </span>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div className="player-info">
                                             {entry.photoURL ? (
-                                                <img src={entry.photoURL} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                                <img src={entry.photoURL} alt="" />
                                             ) : (
-                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div className="player-avatar-placeholder">
                                                     <UserIcon size={14} color="#999" />
                                                 </div>
                                             )}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div className="player-badge">
                                                 <img
                                                     src={`https://flagcdn.com/w20/${entry.country.toLowerCase()}.png`}
                                                     alt={entry.country}
-                                                    style={{ width: '16px', borderRadius: '2px', objectFit: 'cover' }}
                                                 />
-                                                <span style={{ fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+                                                <span className="player-name-text">
                                                     {entry.displayName.split(' ')[0]}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                            <span style={{ fontWeight: '700', color: 'var(--primary)', lineHeight: 1 }}>{entry.score} pts</span>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1 }}>{Math.round(entry.accuracy)}%</span>
+                                        <div className="score-container">
+                                            <span className="score-pts">
+                                                {entry.score} <span className="pts-label">pts</span>
+                                            </span>
+                                            <span className="accuracy-text">{Math.round(entry.accuracy)}%</span>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-muted)', fontSize: '0.8rem', minWidth: '4rem', justifyContent: 'flex-end' }}>
+                                        <div className="time-container">
                                             <Timer size={12} />
                                             <span>{entry.averageTime}s</span>
                                         </div>

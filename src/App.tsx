@@ -115,11 +115,11 @@ function App() {
 
     questionStartTimeRef.current = Date.now();
 
-    // Only start timer if user is logged in AND game is playing
-    if (user && gameState === 'playing') {
+    // Only start timer if game is playing
+    if (gameState === 'playing') {
       startTimer();
     }
-  }, [countries, startTimer, refillQueue, user, gameState]);
+  }, [countries, startTimer, refillQueue, gameState]);
 
   // Reset/Init Game Logic
   useEffect(() => {
@@ -131,24 +131,16 @@ function App() {
       setTotalTimeTaken(0);
       setSeenCount(0);
 
-      if (user) {
-        setGameState('paused');
-        // Do not call nextQuestion here which might start timer? 
-        // Actually nextQuestion is needed to init the Question, 
-        // but we must ensure startTimer inside nextQuestion respects paused logic.
-        nextQuestion();
-        trackGameStart(difficulty, region, subregion);
-      } else {
-        setGameState('idle');
-        nextQuestion();
-      }
+      setGameState('paused');
+      nextQuestion();
+      trackGameStart(difficulty, region, subregion);
     }
     return () => stopTimer();
   }, [countries, stopTimer, difficulty, region, subregion, user]);
 
   // Watch for user login to start game if not already playing
   useEffect(() => {
-    if (user && gameState === 'idle' && !showResults && countries && countries.length >= 3) {
+    if (gameState === 'idle' && !showResults && countries && countries.length >= 3) {
       // Changed to 'paused' instead of 'playing' to wait for user to click Play
       setGameState('paused');
       if (currentQuestion && !timerRef.current) {
@@ -162,13 +154,6 @@ function App() {
       }
     }
 
-    if (!user && gameState === 'playing') {
-      stopTimer();
-      setGameState('idle');
-      setScore(0);
-      setTotalQuestions(0);
-      setTotalTimeTaken(0);
-    }
   }, [user, gameState, showResults, countries, startTimer, nextQuestion, stopTimer, difficulty, region, subregion, currentQuestion]);
 
 
@@ -180,10 +165,6 @@ function App() {
   };
 
   const handleResumeGame = () => {
-    if (!user) {
-      setIsLoginModalOpen(true);
-      return;
-    }
     setGameState('playing');
     // Adjust start time to account for pause duration
     const timeElapsed = (currentLimit - timeLeft) * 1000;
@@ -192,10 +173,6 @@ function App() {
   };
 
   const handleOptionClick = (option: Country | null) => {
-    if (!user) {
-      setIsLoginModalOpen(true);
-      return;
-    }
 
     if (gameState !== 'playing') {
       // User must press Play button to resume/start
@@ -326,7 +303,7 @@ function App() {
       <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <RefreshCw className="animate-spin" size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-          <h2>{authLoading ? 'Signing in...' : 'Loading Flags...'}</h2>
+          <h2>{authLoading ? 'Loadiing...' : 'Loading Flags...'}</h2>
         </div>
       </div>
     );
@@ -349,7 +326,7 @@ function App() {
     <div className="split-layout">
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       <div className="left-panel">
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <header className="game-header">
           <div>
             <h1>Flag Master</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -407,8 +384,8 @@ function App() {
           </div>
         </header>
 
-        <div style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.4)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--glass-border)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <div className="game-options-container">
+          <div className="game-options-grid">
             <div>
               <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Difficulty</span>
               <DifficultySelector current={difficulty} onSelect={handleDifficultyChange} />
