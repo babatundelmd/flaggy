@@ -630,3 +630,35 @@ h1 {
     padding-bottom: 0;
   }
 }
+
+/* PRO and Explorer Styles */
+.btn-pro-badge {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-pro-badge:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
+}
+
+.education-map-page svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rsm-geography {
+  transition: all 0.2s ease;
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.path-drawing {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawPath 2s ease forwards;
+}

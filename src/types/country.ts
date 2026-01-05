@@ -9,6 +9,7 @@ export interface Country {
     svg: string;
     alt?: string;
   };
+  capital?: string[];
   region: string;
   subregion: string;
   population: number;
@@ -23,6 +24,7 @@ export interface GameState {
   difficulty: Difficulty;
   region: string;
   subregion: string;
+  isPro?: boolean;
 }
 
 export interface Question {

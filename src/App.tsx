@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain, Github, User as UserIcon, LogOut, Flag, Play, Pause } from 'lucide-react';
+import { Trophy, RefreshCw, Globe2, Timer as TimerIcon, Brain, Github, User as UserIcon, LogOut, Flag, Play, Pause, Sparkles, Map as MapIcon } from 'lucide-react';
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { useFlags } from './hooks/useFlags';
 import { generateQuestion } from './logic/game';
 import { FlagCard } from './components/FlagCard';
+import CountryOutline from './components/CountryOutline';
+import EducationMap from './components/EducationMap';
+import PaymentView from './components/PaymentView';
 import { OptionButton } from './components/OptionButton';
 import { DifficultySelector } from './components/DifficultySelector';
 import { RegionSelector } from './components/RegionSelector';
@@ -10,6 +14,7 @@ import type { Difficulty, Question, Country } from './types/country';
 import { initPostHog, trackGameStart, trackGuess, trackDifficultyChange, trackRegionChange } from './logic/analytics';
 import { ResultsModal } from './components/ResultsModal';
 import { useAuth } from './contexts/AuthContext';
+import { usePro } from './contexts/ProContext';
 import { LoginModal } from './components/LoginModal';
 import { Leaderboard } from './components/Leaderboard';
 import { detectUserCountry, submitScore } from './logic/leaderboard';
@@ -27,13 +32,16 @@ const TIMER_LIMITS: Record<Difficulty, number> = {
 
 type GameState = 'idle' | 'playing' | 'paused';
 
-function App() {
+function MainGame() {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { isPro, isLoading: proLoading } = usePro();
+  const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [userCountry, setUserCountry] = useState<string>('US');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [region, setRegion] = useState('all');
   const [subregion, setSubregion] = useState('all');
+  const [gameMode, setGameMode] = useState<'flags' | 'outlines'>('flags');
 
   const [gameState, setGameState] = useState<GameState>('idle');
 
@@ -298,12 +306,12 @@ function App() {
     trackRegionChange(region, s);
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || proLoading) {
     return (
       <div className="split-layout" style={{ justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient)', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <RefreshCw className="animate-spin" size={48} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-          <h2>{authLoading ? 'Loadiing...' : 'Loading Flags...'}</h2>
+          <h2>{authLoading || proLoading ? 'Loading...' : 'Loading Flags...'}</h2>
         </div>
       </div>
     );
@@ -331,28 +339,40 @@ function App() {
             <h1>Flag Master</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <p className="subtitle">Learn all the flags of the world</p>
-              {/* {gameState === 'playing' && (
-                <button
-                  onClick={handlePauseGame}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--text-muted)',
-                    borderRadius: '8px',
-                    padding: '0.2rem 0.5rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    fontSize: '0.8rem',
-                    color: 'var(--text-muted)'
-                  }}
-                >
-                  <Pause size={12} /> Pause
-                </button>
-              )} */}
             </div>
           </div>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {isPro && (
+              <Link to="/map" className="github-link" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb' }}>
+                <MapIcon size={16} />
+                <span>Explorer</span>
+              </Link>
+            )}
+
+            {user && !isPro && (
+              <button
+                onClick={() => navigate('/payment')}
+                className="btn-pro-badge"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: 'white',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+                }}
+              >
+                <Sparkles size={14} fill="white" />
+                UPGRADE PRO
+              </button>
+            )}
+
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.5)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
@@ -406,10 +426,17 @@ function App() {
         <div className="flag-display-section" style={{ position: 'relative' }}>
           {/* Game Overlay Removed as requested */}
           {currentQuestion && (
-            <FlagCard
-              flagUrl={currentQuestion.correctCountry.flags.svg}
-              altText={currentQuestion.correctCountry.flags.alt}
-            />
+            isPro && gameMode === 'outlines' ? (
+              <CountryOutline
+                cca3={currentQuestion.correctCountry.cca3}
+                name={currentQuestion.correctCountry.name.common}
+              />
+            ) : (
+              <FlagCard
+                flagUrl={currentQuestion.correctCountry.flags.svg}
+                altText={currentQuestion.correctCountry.flags.alt}
+              />
+            )
           )}
           {!currentQuestion && gameState === 'idle' && (
             <div style={{ width: '100%', aspectRatio: '3/2', background: 'rgba(0,0,0,0.05)', borderRadius: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -448,6 +475,40 @@ function App() {
 
       <div className="right-panel">
         <div className="controls-section">
+          {isPro && (
+            <div style={{ background: 'rgba(99, 102, 241, 0.05)', padding: '1rem', borderRadius: '16px', border: '1px dashed var(--primary)' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>PRO Version Active</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <button
+                  onClick={() => setGameMode('flags')}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: gameMode === 'flags' ? 'var(--primary)' : 'white',
+                    color: gameMode === 'flags' ? 'white' : 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >Flags</button>
+                <button
+                  onClick={() => setGameMode('outlines')}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: gameMode === 'outlines' ? 'var(--primary)' : 'white',
+                    color: gameMode === 'outlines' ? 'white' : 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >Outlines</button>
+              </div>
+            </div>
+          )}
+
           <div className="timer-bar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
               onClick={gameState === 'playing' ? handlePauseGame : handleResumeGame}
@@ -561,6 +622,22 @@ function App() {
         />
       )}
     </div>
+  );
+}
+
+function ProtectedMap() {
+  const { isPro, isLoading } = usePro();
+  if (isLoading) return null;
+  return isPro ? <EducationMap /> : <Navigate to="/" replace />;
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MainGame />} />
+      <Route path="/payment" element={<PaymentView />} />
+      <Route path="/map" element={<ProtectedMap />} />
+    </Routes>
   );
 }
 
