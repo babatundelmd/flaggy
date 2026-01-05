@@ -41,10 +41,10 @@ export const detectUserCountry = async (): Promise<string> => {
     }
 
     try {
-        // Using ip-api.com - 15,000 requests/hour for free, no CORS issues
-        const response = await fetch('http://ip-api.com/json/');
+        // Using api.country.is - Reliable HTTPS geolocation
+        const response = await fetch('https://api.country.is/');
         const data = await response.json();
-        const country = data.countryCode || 'US';
+        const country = data.country || 'US';
 
         // Cache the result
         localStorage.setItem('userCountry', country);
