@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFlags } from '../hooks/useFlags';
+import SearchBar from './SearchBar';
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -18,7 +19,7 @@ const EducationMap: React.FC = () => {
 
     return (
         <div className="education-map-page" style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
-            <header style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', background: 'white', borderBottom: '1px solid #e2e8f0' }}>
+            <header style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', borderBottom: '1px solid #e2e8f0' }}>
                 <Link to="/" style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -31,6 +32,8 @@ const EducationMap: React.FC = () => {
                 }}>
                     <ArrowLeft size={20} />
                 </Link>
+                <SearchBar />
+                <div style={{ width: 40 }} /> {/* Spacer to balance header */}
             </header>
 
             <main style={{ flex: 1, position: 'relative', overflow: 'hidden', padding: 0 }} onMouseMove={handleMouseMove}>
